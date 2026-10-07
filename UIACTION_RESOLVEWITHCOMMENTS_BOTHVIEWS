@@ -1,0 +1,46 @@
+//works on both self-service and ITIL view of incidents
+
+//ITIL view:
+//https://dev213089.service-now.com/now/nav/ui/classic/params/target/incident.do%3Fsys_id%3D48a8d9ad83bb4b54e958cd19feaad3ef%26sysparm_view%3D%26sysparm_domain%3Dnull%26sysparm_domain_scope%3Dnull%26sysparm_record_row%3D1%26sysparm_record_rows%3D64%26sysparm_record_list%3Dactive%253dtrue%255eORDERBYDESCnumber
+
+
+//View:self-service
+//https://dev213089.service-now.com/now/nav/ui/classic/params/target/incident.do%3Fsys_id%3D-1%26sys_is_list%3Dtrue%26sys_target%3Dincident%26sysparm_checked_items%3D%26sysparm_fixed_query%3D%26sysparm_group_sort%3D%26sysparm_list_css%3D%26sysparm_query%3Dcaller_id%253djavascript%253ags.getUserID()%255eactive%253dtrue%255euniversal_requestISEMPTY%26sysparm_referring_url%3Dincident_list.do%253fsysparm_query%253dcaller_id%25253Djavascript%25253Ags.getUserID%252528%252529%25255Eactive%25253Dtrue%25255Euniversal_requestISEMPTY%25255EEQ%254099%2540sysparm_view%253dess%254099%2540caller_id%253djavascript%25253Ags.getUserID%252528%252529%25255Eactive%25253Dtrue%25255Euniversal_requestISEMPTY%26sysparm_target%3D%26sysparm_view%3Dess
+
+/*********
+[Name]:
+Resolve with Comments
+[Action name]:res_c
+************/
+
+/*******/
+//[ONCLICK]
+//var e=gel('incident.comments')||gel('incident.work_notes');var c=e&&e.value?e.value.trim():'';if(!c)alert('Comment required');else{g_form.setValue('close_notes',c);gsftSubmit(null,g_form.getFormElement(),'res_c');}
+/****************
+
+/*********
+[CONDITION]
+(    current.canWrite()  || gs.hasRole('admin')  ) && (  current.state != 6 && current.state != 7 && current.state != 8 )
+**********/
+
+SCRIPT:
+****************/
+if (typeof window == 'undefined') {
+  var reason = (current.close_notes + '').trim();
+  try {
+    reason = reason || current.comments.getJournalEntry(1) || current.work_notes.getJournalEntry(1) || '';
+  } catch (e) {}
+
+  if (!reason) {
+    gs.addErrorMessage('Comments or work notes are required to resolve this incident.');
+    current.setAbortAction(true);
+    action.setRedirectURL(current);
+  } else {
+    current.state = 6;
+    current.incident_state = 6;
+    current.close_code = 'No resolution provided';
+    current.close_notes = reason;
+    current.update();
+    action.setRedirectURL(current);
+  }
+}
