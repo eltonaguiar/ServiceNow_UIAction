@@ -1,0 +1,70 @@
+/***************
+UI Action. https://dev213089.service-now.com/now/nav/ui/classic/params/target/sys_ui_action.do
+
+Name: Resolve with Comments
+Table: Incident[incident]
+Order:100
+Action name: resolve_no_resolution
+
+Active=True(checked)
+Show Insert: FALSE(not checked)
+Show Update: TRUE (checked)
+Client: CHECKED
+
+Form button:Checked
+Application:Global
+
+****************/
+
+
+
+/********FIELDS
+Messages: (leave empty)
+Comments:Cancels an incident (state 8). Client script requires comments or work notes before submit. (a note for admins)
+Hint(tooltip): Resolves the incident as No resolution provided. Comments or work notes are required.
+OnClick:runClientCode();
+Condition:current.canWrite() && current.state != 6 && current.state != 7 && current.state != 8
+
+***********/
+
+SCRIPT:
+
+
+
+
+function runClientCode() {
+  var comments = (g_form.getValue('comments') || '').trim();
+  var notes = (g_form.getValue('work_notes') || '').trim();
+
+  if (!comments && !notes) {
+    g_form.setMandatory('comments', true);
+    g_form.addErrorMessage('Comments or work notes are required to resolve this incident.');
+    return false;
+  }
+
+  gsftSubmit(null, g_form.getFormElement(), 'resolve_no_resolution');
+}
+
+if (typeof window == 'undefined') {
+  runServerCode();
+}
+
+function runServerCode() {
+
+	
+	/*********
+	 * Incident states per sys_choice_list element of "state" and table="incident"
+	 * 1	New
+       2	In Progress
+       3	On Hold
+       6	Resolved
+       7	Closed
+       8	Canceled
+
+	 */
+  current.state = 6;
+  current.close_code = 'No resolution provided';
+  current.close_notes = current.comments || current.work_notes;
+  current.update();
+  action.setRedirectURL(current);
+}
